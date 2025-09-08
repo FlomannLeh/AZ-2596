@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vereinfachter Filter Baukasten</title>
+    <title>Einlasskriterien Baukasten</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,44 +11,38 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-        }
-        .condition-row-wrapper {
-             position: relative;
-        }
-        .condition-row {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            background-color: #f9fafb;
-            padding: 1.5rem;
-            border-radius: 0.75rem;
-            border: 1px solid #d1d5db;
+            background-color: #f3f3f3;
         }
         .logical-separator {
-            font-weight: 600;
+            font-weight: 500;
             color: #4b5563;
+            text-align: center;
+            margin: 0.75rem 0;
         }
         select {
-            border-color: #d1d5db;
-            border-radius: 0.375rem;
-            padding: 0.5rem 0.75rem;
-            background-color: white;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="%236b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l4 4 4-4"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1.25em;
+            padding-right: 2.5rem;
         }
-        select:disabled {
-            background-color: #f3f4f6;
-            color: #9ca3af;
+        .condition-row-wrapper {
+            border-left-width: 4px;
+            background-color: #fafafa; /* Hellgrauer Hintergrund für die Filter-Karte */
         }
-        .delete-btn {
-            background: none;
-            border: none;
-            color: #9ca3af;
-            cursor: pointer;
-            padding: 0.25rem;
+        .filter-include {
+            border-left-color: #22c55e; /* green-500 */
         }
-        .delete-btn:hover {
-            color: #ef4444;
+        .filter-exclude {
+            border-left-color: #ef4444; /* red-500 */
         }
+        .filter-neutral {
+             border-left-color: #e5e7eb; /* gray-200 */
+        }
+
         /* --- Multiselect Component Styles --- */
         .multiselect-container {
             position: relative;
@@ -59,12 +53,12 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 0.5rem;
-            padding: 0.25rem 0.5rem;
+            padding: 0.5rem;
             border: 1px solid #d1d5db;
             border-radius: 0.375rem;
             background-color: white;
             cursor: text;
-            min-height: 42px;
+            min-height: 44px;
         }
         .multiselect-tag {
             display: flex;
@@ -72,7 +66,7 @@
             gap: 0.25rem;
             background-color: #e5e7eb;
             color: #374151;
-            padding: 0.25rem 0.5rem;
+            padding: 0.125rem 0.5rem;
             border-radius: 0.25rem;
             font-size: 0.875rem;
         }
@@ -84,7 +78,6 @@
             border: none;
             outline: none;
             flex-grow: 1;
-            padding: 0.25rem;
         }
         .multiselect-dropdown {
             position: absolute;
@@ -106,68 +99,71 @@
         .multiselect-option:hover {
             background-color: #f3f4f6;
         }
-        .multiselect-option-info {
+         .multiselect-option-info {
             padding: 0.5rem 0.75rem;
             font-style: italic;
             color: #6b7280;
-            text-align: center;
-        }
-        /* --- Summary Section Styles --- */
-        .summary-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
         }
     </style>
 </head>
 <body class="p-8">
 
-    <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg">
-        <h1 class="text-3xl font-bold mb-2">Vereinfachter Filter Baukasten</h1>
-        <p class="text-gray-600 mb-8">Erstellen Sie Filterregeln, die mit ODER verknüpft werden.</p>
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white p-6 md:p-8 rounded-lg border border-gray-200 shadow-sm">
+            <div class="p-4 rounded-lg mb-6 border border-gray-200" style="background-color: #fafafa;">
+                <h1 class="text-2xl font-semibold mb-2">Einlasskriterien</h1>
+                <p class="text-gray-600">Bei Verwendung von Ticketfiltern wird ein Ticket erfolgreich gescannt, wenn es mindestens eines der folgenden Filterkriterien erfüllt:</p>
+            </div>
 
-        <div id="filter-editor-container" class="space-y-4">
-            <!-- Filter criteria will be added here -->
+            <div id="filter-editor-container" class="space-y-3">
+                <!-- Filter criteria will be added here -->
+            </div>
+            
+            <div class="mt-4">
+                 <button id="add-criterion-btn" class="w-full bg-gray-900 text-white font-semibold py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+                      <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
+                    </svg>
+                    Neues Einlasskriterium hinzufügen
+                </button>
+            </div>
         </div>
-
-        <div class="mt-6 pt-6 border-t">
-            <button id="add-criterion-btn" class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors text-lg">
-                + Neues Filterkriterium hinzufügen (ODER)
+        <div class="mt-4 flex justify-end items-center gap-3">
+             <button class="text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition-colors">
+                Abbrechen
             </button>
-        </div>
-        
-        <div id="summary-section" class="mt-8 pt-6 border-t">
-            <div id="summary-header" class="flex justify-between items-center cursor-pointer">
-                <h2 class="text-xl font-semibold">Filter-Zusammenfassung</h2>
-                <svg id="summary-arrow" class="w-6 h-6 transition-transform transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-            </div>
-            <div id="summary-content" class="summary-content mt-4 text-gray-700 bg-gray-50 p-4 rounded-lg">
-                <p id="summary-text">Noch keine Regeln konfiguriert.</p>
-            </div>
+             <button class="bg-gray-900 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors">
+                Speichern
+            </button>
         </div>
     </div>
 
+
     <template id="condition-template">
-         <div class="condition-row-wrapper">
-            <div class="condition-row">
-                <select class="filter-type">
+         <div class="condition-row-wrapper relative border border-gray-300 rounded-lg p-3 filter-neutral">
+            <div class="flex items-center gap-3">
+                <select class="filter-type bg-white border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 py-2.5 px-4 min-w-[150px]">
                     <option value="kategorie">Kategorie</option>
                     <option value="preisstufe">Preisstufe</option>
                     <option value="block">Block</option>
                     <option value="merkmal">Merkmal</option>
                     <option value="saalplanLabel">Saalplan-Label</option>
                 </select>
-                <select class="filter-operator">
+                <select class="filter-operator bg-white border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 py-2.5 px-4 min-w-[180px]">
                     <option value="is">ist eine von</option>
                     <option value="isNot">ist keine von</option>
                 </select>
                 <div class="multiselect-container">
                     <div class="multiselect-input-wrapper">
-                        <input type="text" class="multiselect-search-input" placeholder="Werte auswählen oder neu eingeben...">
+                        <input type="text" class="multiselect-search-input" placeholder="Werte auswählen...">
                     </div>
                     <div class="multiselect-dropdown hidden"></div>
                 </div>
-                <button class="delete-condition-btn delete-btn text-lg absolute top-3 right-3">&times;</button>
+                 <button class="delete-condition-btn p-1 rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                    </svg>
+                </button>
             </div>
         </div>
     </template>
@@ -176,8 +172,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- DATA ---
     const filterOptionsData = {
-        kategorie: ["Kategorie A", "Kategorie B", "Kategorie C", "Festivalpass"],
-        preisstufe: ["Erwachsene", "Kind", "VIP Gold", "Ermäßigt", "Begleitperson", "Rollstuhlfahrer"],
+        kategorie: ["Kategorie 1", "Kategorie 2", "Kategorie 3", "Festivalpass"],
+        preisstufe: ["Erwachsene", "Kind", "VIP Gold", "Ermäßigt", "3. Preisstufe", "Begleitperson"],
         block: ["A", "B", "C", "D", "Parkett links", "Parkett rechts", "Balkon Mitte"],
         merkmal: ["Rollstuhlfahrer", "Sichtbehindert", "Presse"],
         saalplanLabel: ["Beste Sicht", "Premium", "Standard"]
@@ -187,49 +183,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const editorContainer = document.getElementById('filter-editor-container');
     const addCriterionBtn = document.getElementById('add-criterion-btn');
     const conditionTemplate = document.getElementById('condition-template');
-    const summaryHeader = document.getElementById('summary-header');
-    const summaryContent = document.getElementById('summary-content');
-    const summaryText = document.getElementById('summary-text');
-    const summaryArrow = document.getElementById('summary-arrow');
 
     // --- CORE FUNCTIONS ---
 
     function updateAll() {
         updateFilterTypeOptions();
-        generateSummary();
+        updateSeparators();
     }
-
-    function generateSummary() {
-        const conditions = [];
-        editorContainer.querySelectorAll('.condition-row-wrapper').forEach(conditionWrapper => {
-            const type = conditionWrapper.querySelector('.filter-type option:checked').textContent;
-            const operator = conditionWrapper.querySelector('.filter-operator option:checked').textContent;
-            const values = Array.from(conditionWrapper.querySelectorAll('.multiselect-tag span:first-child')).map(span => `'${span.textContent}'`);
-            
-            if (values.length > 0) {
-                conditions.push(`<strong>${type}</strong> ${operator} <em>${values.join(', ')}</em>`);
+    
+    function updateSeparators() {
+        const rows = editorContainer.querySelectorAll('.condition-row-wrapper, .logical-separator');
+        rows.forEach(el => {
+            if (el.classList.contains('logical-separator')) {
+                el.remove();
             }
         });
 
-        if (conditions.length > 0) {
-            summaryText.innerHTML = `Ein Ticket wird eingelassen, wenn eine der folgenden Regeln zutrifft: <br>${conditions.join(' <strong class="text-red-600">ODER</strong><br>')}`;
-        } else {
-            summaryText.textContent = 'Noch keine Regeln konfiguriert.';
-        }
+        const newRows = editorContainer.querySelectorAll('.condition-row-wrapper');
+        newRows.forEach((row, index) => {
+            if (index > 0) {
+                 const separator = document.createElement('div');
+                 separator.className = 'logical-separator';
+                 separator.textContent = 'ODER';
+                 row.before(separator);
+            }
+        });
     }
 
-    /**
-     * Disables filter type options that are already used, with exceptions.
-     * Prevents creating conflicting rules (e.g. "Preisstufe ist X" and "Preisstufe ist Y"),
-     * but allows multiple filters for 'merkmal' and 'saalplanLabel' as required.
-     */
+
     function updateFilterTypeOptions() {
         const allTypeSelects = editorContainer.querySelectorAll('.filter-type');
         const usedTypes = new Set();
         const exceptionTypes = ['merkmal', 'saalplanLabel'];
 
         allTypeSelects.forEach(select => {
-            // Only add to usedTypes if it's not an exception
             if (!exceptionTypes.includes(select.value)) {
                 usedTypes.add(select.value);
             }
@@ -237,47 +224,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
         allTypeSelects.forEach(currentSelect => {
             Array.from(currentSelect.options).forEach(option => {
-                // An option is disabled if its value is in usedTypes AND it's not the currently selected value in this specific dropdown.
                 option.disabled = usedTypes.has(option.value) && currentSelect.value !== option.value;
             });
         });
     }
     
-    function handleOperatorVisibility(conditionElement) {
-        const typeSelect = conditionElement.querySelector('.filter-type');
+    function handleOperatorStyling(conditionElement) {
         const operatorSelect = conditionElement.querySelector('.filter-operator');
+        const typeSelect = conditionElement.querySelector('.filter-type');
+        
         const type = typeSelect.value;
-
         if (type === 'merkmal' || type === 'saalplanLabel') {
             operatorSelect.value = 'is';
             operatorSelect.querySelector('option[value="isNot"]').style.display = 'none';
         } else {
             operatorSelect.querySelector('option[value="isNot"]').style.display = 'block';
         }
+        
+        const operator = operatorSelect.value;
+        conditionElement.classList.remove('filter-include', 'filter-exclude', 'filter-neutral');
+        if(operator === 'is') {
+            conditionElement.classList.add('filter-include');
+        } else if (operator === 'isNot') {
+            conditionElement.classList.add('filter-exclude');
+        }
     }
 
     function addFilterRow() {
-        if (editorContainer.children.length > 0) {
-            const separator = document.createElement('div');
-            separator.className = 'text-center my-1 text-sm logical-separator';
-            separator.textContent = 'ODER';
-            editorContainer.appendChild(separator);
-        }
-        
         const conditionFragment = conditionTemplate.content.cloneNode(true);
         const newConditionElement = conditionFragment.querySelector('.condition-row-wrapper');
         editorContainer.appendChild(newConditionElement);
         
         initializeMultiselect(newConditionElement);
-        handleOperatorVisibility(newConditionElement);
+        
+        const operatorSelect = newConditionElement.querySelector('.filter-operator');
+        operatorSelect.addEventListener('change', () => handleOperatorStyling(newConditionElement));
+       
+        handleOperatorStyling(newConditionElement);
         updateAll();
     }
     
-    /**
-     * Initializes the custom multiselect component for a condition row.
-     * Now includes logic to add custom values by pressing Enter.
-     * @param {HTMLElement} conditionElement - The condition row element containing the multiselect.
-     */
     function initializeMultiselect(conditionElement) {
         const container = conditionElement.querySelector('.multiselect-container');
         const inputWrapper = container.querySelector('.multiselect-input-wrapper');
@@ -304,11 +290,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 dropdown.appendChild(optionEl);
             });
             
-            // Show info text if user can add a new value
-            if (searchTerm) {
+            if (searchTerm.trim() !== '') {
                  const infoEl = document.createElement('div');
                  infoEl.className = 'multiselect-option-info';
-                 infoEl.innerHTML = `Drücke <strong>Enter</strong>, um "<em>${searchInput.value}</em>" hinzuzufügen`;
+                 infoEl.innerHTML = `Drücke Enter, um "<em>${searchInput.value}</em>" hinzuzufügen`;
                  dropdown.appendChild(infoEl);
             }
         }
@@ -318,10 +303,9 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedValues.forEach(value => {
                 const tagEl = document.createElement('div');
                 tagEl.className = 'multiselect-tag';
-                tagEl.innerHTML = `<span>${value}</span><span class="multiselect-tag-remove" data-value="${value}">&times;</span>`;
+                tagEl.innerHTML = `<span>${value}</span><span class="multiselect-tag-remove pl-1" data-value="${value}">&times;</span>`;
                 inputWrapper.insertBefore(tagEl, searchInput);
             });
-            generateSummary();
         }
         
         function addValue(value) {
@@ -338,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedValues.clear();
             renderTags();
             renderDropdown();
-            handleOperatorVisibility(conditionElement);
+            handleOperatorStyling(conditionElement);
             updateAll();
         });
 
@@ -349,10 +333,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         searchInput.addEventListener('input', renderDropdown);
         
-        // Add new value on Enter key press
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && searchInput.value.trim() !== '') {
-                e.preventDefault(); // Prevent form submission
+                e.preventDefault();
                 addValue(searchInput.value.trim());
             }
         });
@@ -378,6 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- GLOBAL EVENT LISTENERS ---
 
     document.addEventListener('click', (e) => {
+        // Close all multiselect dropdowns if clicked outside
         document.querySelectorAll('.multiselect-container').forEach(container => {
             if (!container.contains(e.target)) {
                 container.querySelector('.multiselect-dropdown').classList.add('hidden');
@@ -388,32 +372,10 @@ document.addEventListener('DOMContentLoaded', () => {
     addCriterionBtn.addEventListener('click', addFilterRow);
 
     editorContainer.addEventListener('click', (e) => {
-        if (e.target.classList.contains('delete-condition-btn')) {
+        if (e.target.closest('.delete-condition-btn')) {
             const conditionWrapper = e.target.closest('.condition-row-wrapper');
-            const prevElement = conditionWrapper.previousElementSibling;
-            
-            if (prevElement && prevElement.textContent === 'ODER') {
-                prevElement.remove();
-            } else {
-                // If it's the very first element, remove the next "ODER" if it exists
-                const nextElement = conditionWrapper.nextElementSibling;
-                if(nextElement && nextElement.textContent === 'ODER') {
-                    nextElement.remove();
-                }
-            }
             conditionWrapper.remove();
             updateAll();
-        }
-    });
-    
-    summaryHeader.addEventListener('click', () => {
-        const isHidden = summaryContent.style.maxHeight === '0px' || summaryContent.style.maxHeight === '';
-        if (isHidden) {
-            summaryContent.style.maxHeight = summaryContent.scrollHeight + 'px';
-            summaryArrow.style.transform = 'rotate(0deg)';
-        } else {
-            summaryContent.style.maxHeight = '0px';
-            summaryArrow.style.transform = 'rotate(180deg)';
         }
     });
 
@@ -424,5 +386,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
-index
-in
+
+
+
