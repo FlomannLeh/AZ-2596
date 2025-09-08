@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vereinfachter Filter Baukasten</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .condition-row-wrapper {
+             position: relative;
+        }
+        .condition-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background-color: #f9fafb;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid #d1d5db;
+        }
+        .logical-separator {
+            font-weight: 600;
+            color: #4b5563;
+        }
+        select {
+            border-color: #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            background-color: white;
+        }
+        select:disabled {
+            background-color: #f3f4f6;
+            color: #9ca3af;
+        }
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+        .delete-btn:hover {
+            color: #ef4444;
+        }
+        /* --- Multiselect Component Styles --- */
+        .multiselect-container {
+            position: relative;
+            flex-grow: 1;
+        }
+        .multiselect-input-wrapper {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: white;
+            cursor: text;
+            min-height: 42px;
+        }
+        .multiselect-tag {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            background-color: #e5e7eb;
+            color: #374151;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+        .multiselect-tag-remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .multiselect-search-input {
+            border: none;
+            outline: none;
+            flex-grow: 1;
+            padding: 0.25rem;
+        }
+        .multiselect-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border: 1px solid #d1d5db;
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+        }
+        .multiselect-option {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+        }
+        .multiselect-option:hover {
+            background-color: #f3f4f6;
+        }
+        .multiselect-option-info {
+            padding: 0.5rem 0.75rem;
+            font-style: italic;
+            color: #6b7280;
+            text-align: center;
+        }
+        /* --- Summary Section Styles --- */
+        .summary-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="p-8">
+
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+        <h1 class="text-3xl font-bold mb-2">Vereinfachter Filter Baukasten</h1>
+        <p class="text-gray-600 mb-8">Erstellen Sie Filterregeln, die mit ODER verknüpft werden.</p>
+
+        <div id="filter-editor-container" class="space-y-4">
+            <!-- Filter criteria will be added here -->
+        </div>
+
+        <div class="mt-6 pt-6 border-t">
+            <button id="add-criterion-btn" class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors text-lg">
+                + Neues Filterkriterium hinzufügen (ODER)
+            </button>
+        </div>
+        
+        <div id="summary-section" class="mt-8 pt-6 border-t">
+            <div id="summary-header" class="flex justify-between items-center cursor-pointer">
+                <h2 class="text-xl font-semibold">Filter-Zusammenfassung</h2>
+                <svg id="summary-arrow" class="w-6 h-6 transition-transform transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+            <div id="summary-content" class="summary-content mt-4 text-gray-700 bg-gray-50 p-4 rounded-lg">
+                <p id="summary-text">Noch keine Regeln konfiguriert.</p>
+            </div>
+        </div>
+    </div>
+
+    <template id="condition-template">
+         <div class="condition-row-wrapper">
+            <div class="condition-row">
+                <select class="filter-type">
+                    <option value="kategorie">Kategorie</option>
+                    <option value="preisstufe">Preisstufe</option>
+                    <option value="block">Block</option>
+                    <option value="merkmal">Merkmal</option>
+                    <option value="saalplanLabel">Saalplan-Label</option>
+                </select>
+                <select class="filter-operator">
+                    <option value="is">ist eine von</option>
+                    <option value="isNot">ist keine von</option>
+                </select>
+                <div class="multiselect-container">
+                    <div class="multiselect-input-wrapper">
+                        <input type="text" class="multiselect-search-input" placeholder="Werte auswählen oder neu eingeben...">
+                    </div>
+                    <div class="multiselect-dropdown hidden"></div>
+                </div>
+                <button class="delete-condition-btn delete-btn text-lg absolute top-3 right-3">&times;</button>
+            </div>
+        </div>
+    </template>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- DATA ---
+    const filterOptionsData = {
+        kategorie: ["Kategorie A", "Kategorie B", "Kategorie C", "Festivalpass"],
+        preisstufe: ["Erwachsene", "Kind", "VIP Gold", "Ermäßigt", "Begleitperson", "Rollstuhlfahrer"],
+        block: ["A", "B", "C", "D", "Parkett links", "Parkett rechts", "Balkon Mitte"],
+        merkmal: ["Rollstuhlfahrer", "Sichtbehindert", "Presse"],
+        saalplanLabel: ["Beste Sicht", "Premium", "Standard"]
+    };
+
+    // --- DOM ELEMENTS ---
+    const editorContainer = document.getElementById('filter-editor-container');
+    const addCriterionBtn = document.getElementById('add-criterion-btn');
+    const conditionTemplate = document.getElementById('condition-template');
+    const summaryHeader = document.getElementById('summary-header');
+    const summaryContent = document.getElementById('summary-content');
+    const summaryText = document.getElementById('summary-text');
+    const summaryArrow = document.getElementById('summary-arrow');
+
+    // --- CORE FUNCTIONS ---
+
+    function updateAll() {
+        updateFilterTypeOptions();
+        generateSummary();
+    }
+
+    function generateSummary() {
+        const conditions = [];
+        editorContainer.querySelectorAll('.condition-row-wrapper').forEach(conditionWrapper => {
+            const type = conditionWrapper.querySelector('.filter-type option:checked').textContent;
+            const operator = conditionWrapper.querySelector('.filter-operator option:checked').textContent;
+            const values = Array.from(conditionWrapper.querySelectorAll('.multiselect-tag span:first-child')).map(span => `'${span.textContent}'`);
+            
+            if (values.length > 0) {
+                conditions.push(`<strong>${type}</strong> ${operator} <em>${values.join(', ')}</em>`);
+            }
+        });
+
+        if (conditions.length > 0) {
+            summaryText.innerHTML = `Ein Ticket wird eingelassen, wenn eine der folgenden Regeln zutrifft: <br>${conditions.join(' <strong class="text-red-600">ODER</strong><br>')}`;
+        } else {
+            summaryText.textContent = 'Noch keine Regeln konfiguriert.';
+        }
+    }
+
+    /**
+     * Disables filter type options that are already used, with exceptions.
+     * Prevents creating conflicting rules (e.g. "Preisstufe ist X" and "Preisstufe ist Y"),
+     * but allows multiple filters for 'merkmal' and 'saalplanLabel' as required.
+     */
+    function updateFilterTypeOptions() {
+        const allTypeSelects = editorContainer.querySelectorAll('.filter-type');
+        const usedTypes = new Set();
+        const exceptionTypes = ['merkmal', 'saalplanLabel'];
+
+        allTypeSelects.forEach(select => {
+            // Only add to usedTypes if it's not an exception
+            if (!exceptionTypes.includes(select.value)) {
+                usedTypes.add(select.value);
+            }
+        });
+
+        allTypeSelects.forEach(currentSelect => {
+            Array.from(currentSelect.options).forEach(option => {
+                // An option is disabled if its value is in usedTypes AND it's not the currently selected value in this specific dropdown.
+                option.disabled = usedTypes.has(option.value) && currentSelect.value !== option.value;
+            });
+        });
+    }
+    
+    function handleOperatorVisibility(conditionElement) {
+        const typeSelect = conditionElement.querySelector('.filter-type');
+        const operatorSelect = conditionElement.querySelector('.filter-operator');
+        const type = typeSelect.value;
+
+        if (type === 'merkmal' || type === 'saalplanLabel') {
+            operatorSelect.value = 'is';
+            operatorSelect.querySelector('option[value="isNot"]').style.display = 'none';
+        } else {
+            operatorSelect.querySelector('option[value="isNot"]').style.display = 'block';
+        }
+    }
+
+    function addFilterRow() {
+        if (editorContainer.children.length > 0) {
+            const separator = document.createElement('div');
+            separator.className = 'text-center my-1 text-sm logical-separator';
+            separator.textContent = 'ODER';
+            editorContainer.appendChild(separator);
+        }
+        
+        const conditionFragment = conditionTemplate.content.cloneNode(true);
+        const newConditionElement = conditionFragment.querySelector('.condition-row-wrapper');
+        editorContainer.appendChild(newConditionElement);
+        
+        initializeMultiselect(newConditionElement);
+        handleOperatorVisibility(newConditionElement);
+        updateAll();
+    }
+    
+    /**
+     * Initializes the custom multiselect component for a condition row.
+     * Now includes logic to add custom values by pressing Enter.
+     * @param {HTMLElement} conditionElement - The condition row element containing the multiselect.
+     */
+    function initializeMultiselect(conditionElement) {
+        const container = conditionElement.querySelector('.multiselect-container');
+        const inputWrapper = container.querySelector('.multiselect-input-wrapper');
+        const searchInput = container.querySelector('.multiselect-search-input');
+        const dropdown = container.querySelector('.multiselect-dropdown');
+        const filterTypeSelect = conditionElement.querySelector('.filter-type');
+        
+        let selectedValues = new Set();
+        let currentFilterType = filterTypeSelect.value;
+
+        function renderDropdown() {
+            const availableOptions = filterOptionsData[currentFilterType] || [];
+            const searchTerm = searchInput.value.toLowerCase();
+            dropdown.innerHTML = '';
+            
+            const filteredOptions = availableOptions
+                .filter(option => !selectedValues.has(option) && option.toLowerCase().includes(searchTerm));
+
+            filteredOptions.forEach(option => {
+                const optionEl = document.createElement('div');
+                optionEl.className = 'multiselect-option';
+                optionEl.textContent = option;
+                optionEl.dataset.value = option;
+                dropdown.appendChild(optionEl);
+            });
+            
+            // Show info text if user can add a new value
+            if (searchTerm) {
+                 const infoEl = document.createElement('div');
+                 infoEl.className = 'multiselect-option-info';
+                 infoEl.innerHTML = `Drücke <strong>Enter</strong>, um "<em>${searchInput.value}</em>" hinzuzufügen`;
+                 dropdown.appendChild(infoEl);
+            }
+        }
+
+        function renderTags() {
+            inputWrapper.querySelectorAll('.multiselect-tag').forEach(tag => tag.remove());
+            selectedValues.forEach(value => {
+                const tagEl = document.createElement('div');
+                tagEl.className = 'multiselect-tag';
+                tagEl.innerHTML = `<span>${value}</span><span class="multiselect-tag-remove" data-value="${value}">&times;</span>`;
+                inputWrapper.insertBefore(tagEl, searchInput);
+            });
+            generateSummary();
+        }
+        
+        function addValue(value) {
+             if (value && !selectedValues.has(value)) {
+                selectedValues.add(value);
+                searchInput.value = '';
+                renderTags();
+                renderDropdown();
+            }
+        }
+
+        filterTypeSelect.addEventListener('change', () => {
+            currentFilterType = filterTypeSelect.value;
+            selectedValues.clear();
+            renderTags();
+            renderDropdown();
+            handleOperatorVisibility(conditionElement);
+            updateAll();
+        });
+
+        inputWrapper.addEventListener('click', () => {
+            dropdown.classList.remove('hidden');
+            searchInput.focus();
+        });
+
+        searchInput.addEventListener('input', renderDropdown);
+        
+        // Add new value on Enter key press
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && searchInput.value.trim() !== '') {
+                e.preventDefault(); // Prevent form submission
+                addValue(searchInput.value.trim());
+            }
+        });
+        
+        dropdown.addEventListener('click', (e) => {
+            if (e.target.classList.contains('multiselect-option')) {
+                addValue(e.target.dataset.value);
+                searchInput.focus();
+            }
+        });
+
+        inputWrapper.addEventListener('click', (e) => {
+            if (e.target.classList.contains('multiselect-tag-remove')) {
+                selectedValues.delete(e.target.dataset.value);
+                renderTags();
+                renderDropdown();
+            }
+        });
+        
+        renderDropdown();
+    }
+    
+    // --- GLOBAL EVENT LISTENERS ---
+
+    document.addEventListener('click', (e) => {
+        document.querySelectorAll('.multiselect-container').forEach(container => {
+            if (!container.contains(e.target)) {
+                container.querySelector('.multiselect-dropdown').classList.add('hidden');
+            }
+        });
+    });
+
+    addCriterionBtn.addEventListener('click', addFilterRow);
+
+    editorContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('delete-condition-btn')) {
+            const conditionWrapper = e.target.closest('.condition-row-wrapper');
+            const prevElement = conditionWrapper.previousElementSibling;
+            
+            if (prevElement && prevElement.textContent === 'ODER') {
+                prevElement.remove();
+            } else {
+                // If it's the very first element, remove the next "ODER" if it exists
+                const nextElement = conditionWrapper.nextElementSibling;
+                if(nextElement && nextElement.textContent === 'ODER') {
+                    nextElement.remove();
+                }
+            }
+            conditionWrapper.remove();
+            updateAll();
+        }
+    });
+    
+    summaryHeader.addEventListener('click', () => {
+        const isHidden = summaryContent.style.maxHeight === '0px' || summaryContent.style.maxHeight === '';
+        if (isHidden) {
+            summaryContent.style.maxHeight = summaryContent.scrollHeight + 'px';
+            summaryArrow.style.transform = 'rotate(0deg)';
+        } else {
+            summaryContent.style.maxHeight = '0px';
+            summaryArrow.style.transform = 'rotate(180deg)';
+        }
+    });
+
+    // --- INITIALIZATION ---
+    addFilterRow();
+});
+</script>
+
+</body>
+</html>
+index
+in
